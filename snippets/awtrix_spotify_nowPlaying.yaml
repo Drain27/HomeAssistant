@@ -1,0 +1,44 @@
+alias: Awtrix Spotify NowPlaying 🎹
+description:
+trigger:
+  - platform: state
+    entity_id: media_player.spotify
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: media_player.spotify
+            state: playing
+          - condition: state
+            entity_id: media_player.spotify
+            attribute: media_content_type
+            state: music
+        sequence:
+          - service: mqtt.publish
+            data:
+              qos: 0
+              retain: false
+              payload: |-
+                {
+                  "text": "{{ state_attr('media_player.spotify', 'media_artist') }} - {{ state_attr('media_player.spotify', 'media_title') }}",
+                  "icon": "18207",
+                  "rainbow": true,
+                  "repeat": 2,
+                  "pushIcon": 0,
+                  "textCase": 0,
+                  "textOffset": 15,
+                  "progress": {{ ( states.media_player.spotify.attributes.media_position / states.media_player.spotify.attributes.media_duration * 100 ) | round() }},
+                  "progressC": "18B04C"
+                }
+              topic: awtrix_0aea8c/custom/spotify
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ not states.media_player.spotify.state ==
+              'playing' }}
+        sequence:
+          - service: mqtt.publish
+            data:
+              qos: 0
+              retain: false
+              topic: awtrix_0aea8c/custom/spotify
